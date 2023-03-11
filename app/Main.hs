@@ -1,5 +1,7 @@
 module Main where
 
+import Control.Monad
+import Data.Maybe (listToMaybe)
 import Lib
 import System.Directory
 import System.FilePath.Windows
@@ -20,15 +22,14 @@ makeDest :: IO [FilePath]
 makeDest = do
   files <- filterLists
   dest <- destination
-  let news = map (\(x) -> dest </> x) files
+  let news = map (dest </>) files
   return news
 
 filePaths :: IO [FilePath]
 filePaths = listDirectory basePath
 
 getAllFileExt :: [FilePath] -> [FilePath]
-getAllFileExt filesInDir =
-  filter (\x -> (takeExtension x) == ".docx") filesInDir
+getAllFileExt = filter (\x -> takeExtension x == ".docx")
 
 filterLists :: IO [FilePath]
 filterLists = do
@@ -36,10 +37,16 @@ filterLists = do
   let fil = getAllFileExt f
   return fil
 
-copyFiles :: IO [()]
+copyFiles :: IO ()
 copyFiles = do
   orig <- filterLists
   dest <- makeDest
-  mapM (\(x, y) -> copyFile x y) $ zip orig dest
+  res <- zipWithM copyFile orig dest
+  let f = listToMaybe res
+  ( case f of
+      Just val -> putStrLn "worked"
+      Nothing -> putStrLn "broken"
+    )
 
+main :: IO ()
 main = copyFiles
